@@ -11,16 +11,19 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Configurations
 URL = "https://mis.nitrr.ac.in/publishedresult.aspx"
 
-# ⚠️ PUT YOUR TARGET RESULT HERE:
+# 1. Put your target branch here:
 TARGET_TEXT = "B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [II]" 
+# 2. Tell the bot to ONLY look for results published in this year:
+TARGET_YEAR = "2026" 
 
-def send_telegram_notification():
+def send_telegram_notification(matched_line):
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
     
     if bot_token and chat_id:
         try:
-            msg = f"🚨 NITRR RESULT ALERT: \n\n{TARGET_TEXT.strip()} is now published!\nCheck here: {URL}"
+            # We now send the EXACT line found, including the date!
+            msg = f"🚨 NITRR RESULT ALERT:\n\n{matched_line}\n\nCheck here: {URL}"
             req_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
             response = requests.post(req_url, json={"chat_id": chat_id, "text": msg})
             
@@ -33,7 +36,7 @@ def send_telegram_notification():
     else:
         print("Telegram credentials not found in secrets.")
 
-def send_sms_notification():
+def send_sms_notification(matched_line):
     account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
     auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
     twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER")
@@ -44,7 +47,7 @@ def send_sms_notification():
         try:
             url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
             payload = {
-                "Body": f"🚨 NITRR Result OUT: {TARGET_TEXT.strip()}. Check portal: https://mis.nitrr.ac.in/publishedresult.aspx !",
+                "Body": f"🚨 NITRR Result OUT: {matched_line} : https://mis.nitrr.ac.in/publishedresult.aspx ",
                 "From": twilio_phone,
                 "To": my_phone
             }
@@ -58,6 +61,22 @@ def send_sms_notification():
             print(f"Failed to connect to Twilio: {e}")
     else:
         print("Twilio credentials not found in secrets.")
+
+def get_published_result_line(driver, search_text, target_year):
+    """Scans the visible text line-by-line to ensure BOTH the branch and the year match."""
+    try:
+        # Get the text exactly as a human sees it on the screen
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+        lines = body_text.split('\n')
+        
+        for line in lines:
+            # If the line contains the branch text AND the year 2026
+            if search_text in line and target_year in line:
+                return line # Return the full text (e.g., "B.Tech.[...] [II] - 14/05/2026")
+    except Exception as e:
+        print(f"Error extracting text: {e}")
+    
+    return None
 
 def main():
     print("Starting browser...")
@@ -75,43 +94,42 @@ def main():
         driver.get(URL)
         time.sleep(4) 
         
-        # .strip() removes accidental spaces from your TARGET_TEXT
         search_text = TARGET_TEXT.strip()
         
-        if search_text in driver.page_source:
-            print("Found in Latest Results!")
-            send_telegram_notification()
-            send_sms_notification()
+        # 1. Check Front Page
+        print("Checking Latest Results on front page...")
+        found_line = get_published_result_line(driver, search_text, TARGET_YEAR)
+        
+        if found_line:
+            print(f"Found in Latest Results! -> {found_line}")
+            send_telegram_notification(found_line)
+            send_sms_notification(found_line)
             return
 
+        # 2. Check Dropdowns
         print("Not on front page. Checking dropdowns...")
-        
-        # Get dropdowns for the FIRST time
         selects = driver.find_elements(By.TAG_NAME, "select")
         if len(selects) >= 2:
-            
             print("Selecting Degree...")
             degree_dropdown = Select(selects[0])
             degree_dropdown.select_by_visible_text("B.Tech.")
-            
-            # Wait 5 seconds for the website to secretly refresh
             time.sleep(5) 
             
             print("Selecting Branch...")
-            # CRITICAL FIX: We must re-find the dropdowns because the page refreshed!
             selects = driver.find_elements(By.TAG_NAME, "select")
             branch_dropdown = Select(selects[1])
             branch_dropdown.select_by_visible_text("INFORMATION TECHNOLOGY")
-            
-            # Wait 5 seconds for the results to appear on screen
             time.sleep(5) 
             
-            if search_text in driver.page_source:
-                print("Found in Branch Results!")
-                send_telegram_notification()
-                send_sms_notification()
+            print("Checking Branch Results...")
+            found_line = get_published_result_line(driver, search_text, TARGET_YEAR)
+            
+            if found_line:
+                print(f"Found in Branch Results! -> {found_line}")
+                send_telegram_notification(found_line)
+                send_sms_notification(found_line)
             else:
-                print("Result not yet published.")
+                print(f"Result for '{search_text}' in year {TARGET_YEAR} not yet published.")
         else:
             print("Dropdowns not found on the page.")
             
