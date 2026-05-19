@@ -10,7 +10,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 # Configurations
 URL = "https://mis.nitrr.ac.in/publishedresult.aspx"
-TARGET_TEXT = "B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [II]"
+TARGET_TEXT = "B.Tech.[ELECTRICAL ENGINEERING-2019-2020 [CBCS]] [IV]" #"B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [II]"
 
 def send_telegram_notification():
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
