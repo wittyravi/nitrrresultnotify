@@ -10,9 +10,9 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 # Configurations
 URL = "https://mis.nitrr.ac.in/publishedresult.aspx"
-# USING ELECTRICAL ENG FOR TESTING PURPOSES
-TARGET_TEXT = "B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [IV]"  #B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [IV] - 14/05/2026
 
+# ⚠️ PUT YOUR TARGET RESULT HERE:
+TARGET_TEXT = "B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [IV]" 
 
 def send_telegram_notification():
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -20,7 +20,7 @@ def send_telegram_notification():
     
     if bot_token and chat_id:
         try:
-            msg = f"🚨 NITRR RESULT ALERT: \n\n{TARGET_TEXT} is now published!\nCheck here: {URL}"
+            msg = f"🚨 NITRR RESULT ALERT: \n\n{TARGET_TEXT.strip()} is now published!\nCheck here: {URL}"
             req_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
             response = requests.post(req_url, json={"chat_id": chat_id, "text": msg})
             
@@ -38,18 +38,16 @@ def send_sms_notification():
     auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
     twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER")
     
-    # Twilio REQUIRES the country code (+91)
     my_phone = "+918770319200" 
     
     if account_sid and auth_token and twilio_phone:
         try:
             url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
             payload = {
-                "Body": f"🚨 NITRR Result OUT: {TARGET_TEXT}. Check portal : https://mis.nitrr.ac.in/publishedresult.aspx !",
+                "Body": f"🚨 NITRR Result OUT: {TARGET_TEXT.strip()}. Check portal!",
                 "From": twilio_phone,
                 "To": my_phone
             }
-            # Twilio uses HTTP Basic Auth
             response = requests.post(url, data=payload, auth=(account_sid, auth_token))
             
             if response.status_code in [200, 201]:
@@ -75,26 +73,40 @@ def main():
     try:
         print(f"Opening URL: {URL}")
         driver.get(URL)
-        time.sleep(3) 
+        time.sleep(4) 
         
-        if TARGET_TEXT in driver.page_source:
+        # .strip() removes accidental spaces from your TARGET_TEXT
+        search_text = TARGET_TEXT.strip()
+        
+        if search_text in driver.page_source:
             print("Found in Latest Results!")
             send_telegram_notification()
             send_sms_notification()
             return
 
         print("Not on front page. Checking dropdowns...")
+        
+        # Get dropdowns for the FIRST time
         selects = driver.find_elements(By.TAG_NAME, "select")
         if len(selects) >= 2:
+            
+            print("Selecting Degree...")
             degree_dropdown = Select(selects[0])
             degree_dropdown.select_by_visible_text("B.Tech.")
-            time.sleep(3) 
             
+            # Wait 5 seconds for the website to secretly refresh
+            time.sleep(5) 
+            
+            print("Selecting Branch...")
+            # CRITICAL FIX: We must re-find the dropdowns because the page refreshed!
+            selects = driver.find_elements(By.TAG_NAME, "select")
             branch_dropdown = Select(selects[1])
             branch_dropdown.select_by_visible_text("INFORMATION TECHNOLOGY")
-            time.sleep(3) 
             
-            if TARGET_TEXT in driver.page_source:
+            # Wait 5 seconds for the results to appear on screen
+            time.sleep(5) 
+            
+            if search_text in driver.page_source:
                 print("Found in Branch Results!")
                 send_telegram_notification()
                 send_sms_notification()
