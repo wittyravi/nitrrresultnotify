@@ -12,7 +12,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 URL = "https://mis.nitrr.ac.in/publishedresult.aspx"
 
 # ⚠️ PUT YOUR TARGET RESULT HERE:
-TARGET_TEXT = "B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [IV]" 
+TARGET_TEXT = "B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [II]" 
 
 def send_telegram_notification():
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -44,7 +44,7 @@ def send_sms_notification():
         try:
             url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
             payload = {
-                "Body": f"🚨 NITRR Result OUT: {TARGET_TEXT.strip()}. Check portal!",
+                "Body": f"🚨 NITRR Result OUT: {TARGET_TEXT.strip()}. Check portal: https://mis.nitrr.ac.in/publishedresult.aspx !",
                 "From": twilio_phone,
                 "To": my_phone
             }
