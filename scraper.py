@@ -11,7 +11,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Configurations
 URL = "https://mis.nitrr.ac.in/publishedresult.aspx"
 # USING ELECTRICAL ENG FOR TESTING PURPOSES
-TARGET_TEXT = "B.Tech.[ELECTRICAL ENGINEERING-2019-2020 [CBCS]] [IV]" 
+TARGET_TEXT = "B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [IV]" 
 
 
 def send_telegram_notification():
@@ -45,7 +45,7 @@ def send_sms_notification():
         try:
             url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
             payload = {
-                "Body": f"🚨 NITRR Result OUT: {TARGET_TEXT}. Check portal!",
+                "Body": f"🚨 NITRR Result OUT: {TARGET_TEXT}. Check portal : https://mis.nitrr.ac.in/publishedresult.aspx !",
                 "From": twilio_phone,
                 "To": my_phone
             }
