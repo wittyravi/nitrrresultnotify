@@ -11,7 +11,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Configurations
 URL = "https://mis.nitrr.ac.in/publishedresult.aspx"
 # USING ELECTRICAL ENG FOR TESTING PURPOSES
-TARGET_TEXT = "B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [IV]" 
+TARGET_TEXT = "B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [IV]"  #B.Tech.[INFORMATION TECHNOLOGY-2019-2020 [CBCS]] [IV] - 14/05/2026
 
 
 def send_telegram_notification():
