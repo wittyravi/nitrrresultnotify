@@ -17,10 +17,31 @@ def send_telegram_notification():
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
     
     if bot_token and chat_id:
-        msg = f"🚨 NITRR RESULT ALERT: \n\n{TARGET_TEXT} is now published!\nCheck here: {URL}"
-        req_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        requests.post(req_url, json={"chat_id": chat_id, "text": msg})
-        print("Telegram Notification sent!")
+        try:
+            msg = f"🚨 NITRR RESULT ALERT: \n\n{TARGET_TEXT} is now published!\nCheck here: {URL}"
+            req_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            requests.post(req_url, json={"chat_id": chat_id, "text": msg})
+            print("Telegram Notification sent successfully!")
+        except Exception as e:
+            print(f"Failed to send Telegram message: {e}")
+    else:
+        print("Telegram credentials not found in secrets.")
+
+def send_sms_notification():
+    api_key = os.environ.get("FAST2SMS_API_KEY")
+    phone = "8770319200" # Your phone number
+    
+    if api_key:
+        try:
+            url = "https://www.fast2sms.com/dev/bulkV2"
+            payload = f"message=NITRR Result is OUT: {TARGET_TEXT}&language=english&route=q&numbers={phone}"
+            headers = {'authorization': api_key, 'Content-Type': "application/x-www-form-urlencoded"}
+            response = requests.post(url, data=payload, headers=headers)
+            print(f"SMS Notification triggered! Fast2SMS API Response Code: {response.status_code}")
+        except Exception as e:
+            print(f"Failed to send SMS: {e}")
+    else:
+        print("Fast2SMS API Key not found in secrets.")
 
 def main():
     print("Starting browser...")
@@ -34,6 +55,7 @@ def main():
     driver.implicitly_wait(10)
     
     try:
+        print(f"Opening URL: {URL}")
         driver.get(URL)
         time.sleep(3) # Wait for page to load
         
@@ -41,9 +63,11 @@ def main():
         if TARGET_TEXT in driver.page_source:
             print("Found in Latest Results!")
             send_telegram_notification()
+            send_sms_notification()
             return
 
         # Strategy 2: If not at the top, navigate the dropdowns
+        print("Not on front page. Checking dropdowns...")
         selects = driver.find_elements(By.TAG_NAME, "select")
         if len(selects) >= 2:
             # 1. Select Degree
@@ -60,6 +84,7 @@ def main():
             if TARGET_TEXT in driver.page_source:
                 print("Found in Branch Results!")
                 send_telegram_notification()
+                send_sms_notification()
             else:
                 print("Result not yet published.")
         else:
@@ -68,6 +93,7 @@ def main():
     except Exception as e:
         print(f"Error during scraping: {e}")
     finally:
+        print("Closing browser...")
         driver.quit()
 
 if __name__ == "__main__":
