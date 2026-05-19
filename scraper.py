@@ -13,6 +13,7 @@ URL = "https://mis.nitrr.ac.in/publishedresult.aspx"
 # USING ELECTRICAL ENG FOR TESTING PURPOSES
 TARGET_TEXT = "B.Tech.[ELECTRICAL ENGINEERING-2019-2020 [CBCS]] [IV]" 
 
+
 def send_telegram_notification():
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
@@ -23,7 +24,6 @@ def send_telegram_notification():
             req_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
             response = requests.post(req_url, json={"chat_id": chat_id, "text": msg})
             
-            # This checks if Telegram ACTUALLY accepted the message
             if response.status_code == 200:
                 print("✅ Telegram Notification sent successfully!")
             else:
@@ -34,25 +34,32 @@ def send_telegram_notification():
         print("Telegram credentials not found in secrets.")
 
 def send_sms_notification():
-    api_key = os.environ.get("FAST2SMS_API_KEY")
-    phone = "8770319200" # Your phone number
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
+    twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER")
     
-    if api_key:
+    # Twilio REQUIRES the country code (+91)
+    my_phone = "+918770319200" 
+    
+    if account_sid and auth_token and twilio_phone:
         try:
-            url = "https://www.fast2sms.com/dev/bulkV2"
-            payload = f"message=NITRR Result is OUT: {TARGET_TEXT}&language=english&route=q&numbers={phone}"
-            headers = {'authorization': api_key, 'Content-Type': "application/x-www-form-urlencoded"}
-            response = requests.post(url, data=payload, headers=headers)
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+            payload = {
+                "Body": f"🚨 NITRR Result OUT: {TARGET_TEXT}. Check portal!",
+                "From": twilio_phone,
+                "To": my_phone
+            }
+            # Twilio uses HTTP Basic Auth
+            response = requests.post(url, data=payload, auth=(account_sid, auth_token))
             
-            # This checks if Fast2SMS ACTUALLY accepted the message
-            if response.status_code == 200:
-                print("✅ SMS Notification sent successfully!")
+            if response.status_code in [200, 201]:
+                print("✅ Twilio SMS Notification sent successfully!")
             else:
-                print(f"❌ Fast2SMS API Rejected it! Code: {response.status_code}, Reason: {response.text}")
+                print(f"❌ Twilio API Rejected it! Code: {response.status_code}, Reason: {response.text}")
         except Exception as e:
-            print(f"Failed to connect to Fast2SMS: {e}")
+            print(f"Failed to connect to Twilio: {e}")
     else:
-        print("Fast2SMS API Key not found in secrets.")
+        print("Twilio credentials not found in secrets.")
 
 def main():
     print("Starting browser...")
