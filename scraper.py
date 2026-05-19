@@ -41,7 +41,7 @@ def send_sms_notification(matched_line):
     auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
     twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER")
     
-     my_phone = os.environ.get("MY_PHONE_NUMBER")
+    my_phone = os.environ.get("MY_PHONE_NUMBER")
     
     if account_sid and auth_token and twilio_phone:
         try:
