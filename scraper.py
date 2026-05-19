@@ -26,7 +26,7 @@ def send_sms_notification():
     # Optional: If you want literal SMS without internet. 
     # Get a free API key from fast2sms.com and add it to GitHub secrets.
     api_key = os.environ.get("FAST2SMS_API_KEY")
-    phone = "YOUR_10_DIGIT_PHONE_NUMBER" # Replace this
+    phone = "8770319200" # Replace this
     if api_key:
         url = "https://www.fast2sms.com/dev/bulkV2"
         payload = f"message=NITRR Result is OUT: {TARGET_TEXT}&language=english&route=q&numbers={phone}"
@@ -71,7 +71,7 @@ def main():
             if TARGET_TEXT in driver.page_source:
                 print("Found in Branch Results!")
                 send_telegram_notification()
-                # send_sms_notification() # Uncomment if using SMS
+                send_sms_notification() # Uncomment if using SMS
             else:
                 print("Result not yet published.")
         else:
